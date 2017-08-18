@@ -16,4 +16,7 @@ public class MainActivity extends AppCompatActivity {
     public void onBubbleViewClick(View view) {
         startActivity(new Intent(this, BubbleViewActivity.class));
     }
+    public void onGalleryClick(View view) {
+        startActivity(new Intent(this, GalleryActivity.class));
+    }
 }

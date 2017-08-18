@@ -16,7 +16,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".BubbleViewActivity"></activity>
+        <activity android:name=".BubbleViewActivity" />
+        <activity android:name=".GalleryActivity"></activity>
     </application>
 
 </manifest>
