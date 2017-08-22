@@ -103,7 +103,7 @@ public class GradientTextView extends TextView {
         String stringPart = displayName.substring(lastSubStringIndex, index);
         SpannableString spanString = new SpannableString(stringPart);
         if (setSpan) {
-            spanString.setSpan(new MSVNoGradientSpan(), 0, spanString.length(), 0);
+            spanString.setSpan(new NoGradientSpan(), 0, spanString.length(), 0);
         }
         spannableStringList.add(spanString);
         shouldSetSpan = !setSpan;
@@ -273,9 +273,9 @@ public class GradientTextView extends TextView {
         postInvalidate();
     }
 
-    class MSVNoGradientSpan extends CharacterStyle implements UpdateAppearance {
+    class NoGradientSpan extends CharacterStyle implements UpdateAppearance {
 
-        public MSVNoGradientSpan() {
+        public NoGradientSpan() {
 
         }
 

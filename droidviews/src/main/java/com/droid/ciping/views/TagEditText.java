@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.support.annotation.NonNull;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -13,7 +14,6 @@ import android.text.TextWatcher;
 import android.text.style.ClickableSpan;
 import android.text.style.ReplacementSpan;
 import android.util.AttributeSet;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 
@@ -22,6 +22,8 @@ import android.widget.EditText;
  */
 
 public class TagEditText extends EditText {
+    private static final String COMMIT_CHAR_SPACE = " ";
+
     public TagEditText(Context context) {
         super(context);
         init();
@@ -35,6 +37,10 @@ public class TagEditText extends EditText {
     public TagEditText(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
+    }
+
+    Spannable getSpannable() {
+        return getText();
     }
 
     private void init() {
@@ -65,30 +71,7 @@ public class TagEditText extends EditText {
                 }
             }
         });
-    }
 
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (keyCode != KeyEvent.KEYCODE_DEL) return super.onKeyUp(keyCode, event);
-        Editable text = getText();
-        if (!(text instanceof SpannableString)) {
-            return super.onKeyUp(keyCode, event);
-        }
-
-        SpannableString spannable = (SpannableString) text;
-        String content = getText().toString();
-        if (content.length() > 0) {
-            String last = content.substring(content.length() - 1, content.length());
-            if (!last.equals(" ")) {
-                String[] m = content.split(" ");
-                String lastTag = m[m.length - 1];
-                content = content.substring(0, content.length() - lastTag.length());
-                setText(content);
-                return true;
-            }
-        }
-
-        return super.onKeyUp(keyCode, event);
     }
 
     /**
@@ -99,15 +82,13 @@ public class TagEditText extends EditText {
         String content = getText().toString();
         SpannableString spannable = new SpannableString(content);
         //通过空格来区分标签
-        String[] m = content.split(" ");
+        String[] m = content.split(COMMIT_CHAR_SPACE);
         int start = 0;
         int end;
         for (String str : m) {
             end = start + str.length();
 
-            RadiusSpan span = new RadiusSpan(Color.GRAY, Color.WHITE, 5);
-            span.setPaddingLR(5);
-            span.setPaddingTB(5);
+            RadiusSpan span = constructChipSpan();
             spannable.setSpan(span, start, end, Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
 
             start = end + 1;
@@ -117,7 +98,16 @@ public class TagEditText extends EditText {
         setSelection(spannable.length());
     }
 
-    class RadiusSpan extends ReplacementSpan {
+    @NonNull
+    private RadiusSpan constructChipSpan() {
+        RadiusSpan span = new RadiusSpan(Color.GRAY, Color.BLACK, 5);
+        span.setPaddingLR(5);
+        span.setPaddingTB(5);
+        return span;
+    }
+
+
+    public class RadiusSpan extends ReplacementSpan {
         /**
          * 需要设置span的宽度
          */
@@ -165,12 +155,14 @@ public class TagEditText extends EditText {
         public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
             paint.setColor(mBackgroundColor);//设置背景颜色
             paint.setAntiAlias(true);// 设置画笔的锯齿效果
+            paint.setStyle(Paint.Style.STROKE);
             RectF oval = new RectF(x, y + paint.ascent(), x + mSize, y + paint.descent() + mPaddingTB);
             //设置文字背景矩形，
             // x为span其实左上角相对整个TextView的x值，
             // y为span左上角相对整个View的y值。
             // paint.ascent()获得文字上边缘，paint.descent()获得文字下边缘
             canvas.drawRoundRect(oval, mRadius, mRadius, paint);
+            paint.setStyle(Paint.Style.FILL_AND_STROKE);
             paint.setColor(mTextColor);
             //绘制文字
             canvas.drawText(text, start, end, x + mRadius * mPaddingLR / 2, y + mPaddingTB / 2, paint);
@@ -197,13 +189,17 @@ public class TagEditText extends EditText {
         @Override
         public void updateDrawState(TextPaint ds) {
             super.updateDrawState(ds);         //设置文本的颜色
-//            ds.setColor(res.getColor(R.color.color));
-            //超链接形式的下划线，false 表示不显示下划线，true表示显示下划线
-//          ds.setUnderlineText(false);
+            ds.setColor(ds.getColor());
+//            超链接形式的下划线，false 表示不显示下划线，true表示显示下划线
+            ds.setUnderlineText(false);
         }
 
         @Override
         public void onClick(View widget) {
         }
+    }
+
+    public interface IChipListener {
+        void onDataChanged();
     }
 }

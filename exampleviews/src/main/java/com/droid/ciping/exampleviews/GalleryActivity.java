@@ -19,7 +19,14 @@ public class GalleryActivity extends AppCompatActivity {
 
         mRecyclerView = (RecyclerView) findViewById(R.id.rv);
 
-        GalleryPlugin.newBuild(mRecyclerView).build();
+        GalleryPlugin.newBuild(mRecyclerView)
+                .NeedRotation(true)
+                .setMaxRotationAngle(60)
+//                .setCompactDistance()
+                .setScale(0.6f, 1.0f)
+                .build();
+
+        mRecyclerView.setHasFixedSize(true);
 
         mRecyclerView.setAdapter(new RecyclerView.Adapter() {
             @Override
@@ -39,6 +46,13 @@ public class GalleryActivity extends AppCompatActivity {
             }
         });
 
+        mRecyclerView.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mRecyclerView.getAdapter().getItemCount() > 0)
+                    mRecyclerView.smoothScrollToPosition(0);
+            }
+        }, 100);
     }
 
     class MyViewHolder extends RecyclerView.ViewHolder {

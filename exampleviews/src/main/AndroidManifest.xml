@@ -17,7 +17,9 @@
             </intent-filter>
         </activity>
         <activity android:name=".BubbleViewActivity" />
-        <activity android:name=".GalleryActivity"></activity>
+        <activity
+            android:name=".GalleryActivity"
+            android:screenOrientation="landscape"/>
     </application>
 
 </manifest>

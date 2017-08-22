@@ -1,8 +1,10 @@
 package com.droid.ciping.views.recyclerview;
 
 import android.graphics.Rect;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.LinearSmoothScroller;
 import android.support.v7.widget.LinearSnapHelper;
@@ -18,12 +20,14 @@ import android.view.View;
 
 public class GalleryPlugin implements IPlugin {
     private RecyclerView mRecyclerView;
+    private boolean isInit = false;
 
+    private View mSnapView;
     //缩放效果
     private boolean needScale = true;
 
     //翻转效果
-    private boolean needRotation = true;
+    private boolean needRotation = false;
 
     //翻转角度
     private int mMaxRotationAngle = 30;
@@ -32,7 +36,8 @@ public class GalleryPlugin implements IPlugin {
     private float minScale = 0.8f;
     private float maxScale = 1.2f;
 
-    private RecyclerView.OnScrollListener onScrollListener;
+    private int mDistance;
+
     private Rect rvRect;
 
     private GalleryPlugin() {
@@ -61,8 +66,27 @@ public class GalleryPlugin implements IPlugin {
         return this;
     }
 
-    public GalleryPlugin setmMaxRotationAngle(int mMaxRotationAngle) {
+    public GalleryPlugin setMaxRotationAngle(int mMaxRotationAngle) {
         this.mMaxRotationAngle = mMaxRotationAngle;
+        return this;
+    }
+
+    public GalleryPlugin setDistance(int distance) {
+        this.mDistance = distance / 2;
+        mRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+
+            @Override
+            public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+                outRect.left = mDistance;
+                outRect.right = mDistance;
+            }
+        });
+
+        return this;
+    }
+
+    public GalleryPlugin setCompactDistance() {
+        mRecyclerView.addItemDecoration(new CompactItemDecoration());
         return this;
     }
 
@@ -90,15 +114,9 @@ public class GalleryPlugin implements IPlugin {
         return this;
     }
 
-
     @Override
     public void attach(RecyclerView recyclerView) {
-        this.mRecyclerView = recyclerView;
-
-        LinearLayoutManager layout = new LinearLayoutManager(recyclerView.getContext(), LinearLayoutManager.HORIZONTAL, false);
-        recyclerView.setLayoutManager(layout);
-
-        onScrollListener = new RecyclerView.OnScrollListener() {
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
@@ -112,21 +130,31 @@ public class GalleryPlugin implements IPlugin {
                 super.onScrolled(recyclerView, dx, dy);
                 computeChild();
             }
-        };
-
-        recyclerView.addOnScrollListener(onScrollListener);
+        });
 
         recyclerView.post(new Runnable() {
             @Override
             public void run() {
-                mRecyclerView.smoothScrollToPosition(mRecyclerView.getAdapter().getItemCount() / 2);
+                initSize();
+                computeChild();
             }
         });
+
+        LinearLayoutManager layout = new LinearLayoutManager(recyclerView.getContext(), LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(layout);
     }
 
     public void initSize() {
+        if (isInit) return;
+        isInit = true;
+
         rvRect = new Rect();
         mRecyclerView.getGlobalVisibleRect(rvRect);
+
+        mRecyclerView.setClipChildren(false);
+        mRecyclerView.setClipToPadding(false);
+        int centerX = rvRect.centerX();
+        mRecyclerView.setPadding(centerX, 0, centerX, 0);
     }
 
     private void computeChild() {
@@ -134,15 +162,21 @@ public class GalleryPlugin implements IPlugin {
         if (!needScale && !needRotation) return;
 
         LinearLayoutManager layoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+
+        int position = -1;
+        if (mSnapView != null) {
+            position = mRecyclerView.getChildLayoutPosition(mSnapView);
+        }
         int childCount = layoutManager.getChildCount();
+
+        Rect rect = new Rect();
+        int centerX = rvRect.centerX();
 
         for (int i = 0; i < childCount; i++) {
             View view = layoutManager.getChildAt(i);
 
-            Rect rect = new Rect();
-            view.getGlobalVisibleRect(rect);
+            layoutManager.getDecoratedBoundsWithMargins(view, rect);
 
-            int centerX = rvRect.centerX();
             int viewX = rect.centerX();
 
             float i3 = Math.abs(centerX - viewX);//view 离中心的距离
@@ -162,9 +196,13 @@ public class GalleryPlugin implements IPlugin {
                 } else {
                     //靠近中心区域计算百分比
                     float p = i3 / distance;
+                    p = p < 0.1 ? 0 : p; //翻转角度校准，防止终止是偏斜
                     rotationChild(view, mMaxRotationAngle * p, centerX > viewX);
                 }
             }
+
+            //修正层级关系。保证靠近中心的在上层
+            ViewCompat.setTranslationZ(view, rvRect.right - (int) i3);
         }
     }
 
@@ -185,7 +223,7 @@ public class GalleryPlugin implements IPlugin {
         protected OrientationHelper mHorizontalHelper, mVerticalHelper;
 
         //SnapHelper中该值为100，这里改为40
-        private static final float MILLISECONDS_PER_INCH = 40f;
+        private static final float MILLISECONDS_PER_INCH = 140f;
 
         @Nullable
         protected LinearSmoothScroller createSnapScroller(final RecyclerView.LayoutManager layoutManager) {
@@ -209,6 +247,13 @@ public class GalleryPlugin implements IPlugin {
                     return MILLISECONDS_PER_INCH / displayMetrics.densityDpi;
                 }
             };
+        }
+
+        @Override
+        public View findSnapView(RecyclerView.LayoutManager layoutManager) {
+            View snapView = super.findSnapView(layoutManager);
+            mSnapView = snapView;
+            return snapView;
         }
 
         protected OrientationHelper getHorizontalHelper(
@@ -297,5 +342,30 @@ public class GalleryPlugin implements IPlugin {
             return super.findSnapView(layoutManager);
         }
 
+    }
+
+    /**
+     * 紧凑型，5.0以上会有堆叠效果
+     */
+    public class CompactItemDecoration extends RecyclerView.ItemDecoration {
+        private int offsetX = -1;
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            if (rvRect == null) return;
+            if (offsetX <= 0) {
+
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                    offsetX = 0;
+                } else if (needRotation) {
+                    int angle = mMaxRotationAngle % 90;
+                    offsetX = view.getWidth() * angle / 200;
+                } else {
+                    offsetX = view.getWidth() / 4;
+                }
+            }
+            outRect.left = -offsetX;
+            outRect.right = -offsetX;
+        }
     }
 }
