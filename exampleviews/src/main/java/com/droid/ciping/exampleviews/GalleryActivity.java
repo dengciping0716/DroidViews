@@ -22,9 +22,10 @@ public class GalleryActivity extends AppCompatActivity {
         GalleryPlugin.newBuild(mRecyclerView)
                 .NeedRotation(true)
                 .setMaxRotationAngle(60)
-//                .setCompactDistance()
+                .setCompactDistance()
                 .setScale(0.6f, 1.0f)
                 .build();
+
 
         mRecyclerView.setHasFixedSize(true);
 

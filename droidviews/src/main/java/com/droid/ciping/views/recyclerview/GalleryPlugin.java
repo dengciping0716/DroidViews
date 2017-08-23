@@ -163,10 +163,6 @@ public class GalleryPlugin implements IPlugin {
 
         LinearLayoutManager layoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
 
-        int position = -1;
-        if (mSnapView != null) {
-            position = mRecyclerView.getChildLayoutPosition(mSnapView);
-        }
         int childCount = layoutManager.getChildCount();
 
         Rect rect = new Rect();
@@ -223,7 +219,7 @@ public class GalleryPlugin implements IPlugin {
         protected OrientationHelper mHorizontalHelper, mVerticalHelper;
 
         //SnapHelper中该值为100，这里改为40
-        private static final float MILLISECONDS_PER_INCH = 140f;
+        private static final float MILLISECONDS_PER_INCH = 40f;
 
         @Nullable
         protected LinearSmoothScroller createSnapScroller(final RecyclerView.LayoutManager layoutManager) {

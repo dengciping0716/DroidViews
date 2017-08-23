@@ -21,7 +21,7 @@ import com.facebook.rebound.SpringSystem;
 import java.util.HashMap;
 
 /**
- * Created by hjohansson on 2015-06-10.
+ * 点击弹跳效果
  */
 public class SpringButtonLayout extends RelativeLayout {
     private boolean isSelected;
@@ -125,6 +125,7 @@ public class SpringButtonLayout extends RelativeLayout {
 
                 setColorRecursive(this);
                 spring.setEndValue(0.5);
+
             } else if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) && isSelected) {
                 isSelected = false;
 
